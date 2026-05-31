@@ -1,8 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const sqlite3 = require("sqlite3").verbose();
-const axios = require("axios");
-const fs = require("fs");
 const path = require("path");
 
 const app = express();
@@ -11,11 +9,7 @@ const app = express();
    CONFIG
 ========================= */
 
-const PORT = process.env.PORT;
-
-const OLLAMA_URL =
-  process.env.OLLAMA_URL ||
-  "http://127.0.0.1:11434/api/generate";
+const PORT = process.env.PORT || 3000;
 
 /* =========================
    MIDDLEWARE
@@ -25,7 +19,7 @@ app.use(cors());
 app.use(express.json({ limit: "2mb" }));
 
 /* =========================
-   DATABASE SETUP
+   DATABASE
 ========================= */
 
 const dbPath = path.join(__dirname, "database.db");
@@ -50,69 +44,20 @@ db.serialize(() => {
       sport TEXT
     )
   `);
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS memory (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user TEXT,
-      message TEXT,
-      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS long_term_memory (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user TEXT,
-      type TEXT,
-      content TEXT,
-      importance INTEGER DEFAULT 1,
-      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS player_progress (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user TEXT,
-      skill TEXT,
-      value INTEGER,
-      notes TEXT,
-      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS player_profile (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user TEXT UNIQUE,
-      position TEXT,
-      height TEXT,
-      weight TEXT,
-      age INTEGER,
-      dominant_hand TEXT,
-      skill_level TEXT,
-      strengths TEXT,
-      weaknesses TEXT,
-      goal TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
 });
 
 /* =========================
-   ROOT
+   HEALTH ROUTE (IMPORTANT)
 ========================= */
 
 app.get("/", (req, res) => {
-  console.log("ROOT HIT");
-  res.send("ANKLES GONE AI ONLINE 🚀");
+  res.status(200).send("ANKLES GONE AI ONLINE 🚀");
 });
 
 /* =========================
-   START SERVER
+   START
 ========================= */
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log("SERVER RUNNING ON PORT:", PORT);
+  console.log("🚀 SERVER RUNNING ON PORT:", PORT);
 });
