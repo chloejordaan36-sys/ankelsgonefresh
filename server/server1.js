@@ -9,7 +9,7 @@ const app = express();
    CONFIG
 ========================= */
 
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
 
 if (!PORT) {
   throw new Error("PORT not provided by Railway");
