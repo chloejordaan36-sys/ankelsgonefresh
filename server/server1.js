@@ -57,7 +57,6 @@ if (!fs.existsSync(dbFolder)) {
 
 const dbPath = path.join(dbFolder, "database.db");
 
-const db = new sqlite3.Database(dbPath);
 
 /* =========================
    TABLES
