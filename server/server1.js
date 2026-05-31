@@ -9,7 +9,11 @@ const app = express();
    CONFIG
 ========================= */
 
-const PORT = process.env.PORT || 8081;
+const PORT = process.env.PORT;
+
+if (!PORT) {
+  throw new Error("PORT not provided by Railway");
+}
 
 /* =========================
    MIDDLEWARE
@@ -47,7 +51,7 @@ db.serialize(() => {
 });
 
 /* =========================
-   HEALTH ROUTE (IMPORTANT)
+   ROUTES
 ========================= */
 
 app.get("/", (req, res) => {
@@ -55,7 +59,7 @@ app.get("/", (req, res) => {
 });
 
 /* =========================
-   START
+   START SERVER
 ========================= */
 
 app.listen(PORT, "0.0.0.0", () => {
