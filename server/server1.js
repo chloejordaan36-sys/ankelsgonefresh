@@ -25,9 +25,6 @@ const path = require("path");
 
 const app = express();
 
-const [dominantHand, setDominantHand] = useState("");
-const [skillLevel, setSkillLevel] = useState("");
-
 const PORT = process.env.PORT || 3000;
 const OLLAMA_URL =
   process.env.OLLAMA_URL ||
