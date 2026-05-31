@@ -1,98 +1,192 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+import { useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from "react-native";
 
 export default function HomeScreen() {
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const [messages, setMessages] = useState([
+    {
+      sender: "ai",
+      text: "🏀 Welcome to ANKLES GONE AI. What are we working on today?"
+    }
+  ]);
+
+  const askAI = async () => {
+    if (!message.trim()) return;
+
+    const userMessage = {
+      sender: "user",
+      text: message
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+
+    const currentMessage = message;
+    setMessage("");
+    setLoading(true);
+
+    try {
+      const res = await fetch(
+        "http://192.168.0.27:3000/ask-ai",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            user: "floors",
+            message: currentMessage
+          })
+        }
+      );
+
+      const data = await res.json();
+
+      setMessages(prev => [
+        ...prev,
+        {
+          sender: "ai",
+          text: data.reply
+        }
+      ]);
+    } catch (err) {
+      setMessages(prev => [
+        ...prev,
+        {
+          sender: "ai",
+          text: "❌ Cannot connect to server."
+        }
+      ]);
+    }
+
+    setLoading(false);
+  };
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <View style={styles.container}>
+      <Text style={styles.title}>
+        ANKLES GONE AI
+      </Text>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+      <FlatList
+        data={messages}
+        keyExtractor={(_, index) => index.toString()}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        renderItem={({ item }) => (
+          <View
+            style={
+              item.sender === "user"
+                ? styles.userBubble
+                : styles.aiBubble
+            }
+          >
+            <Text style={styles.messageText}>
+              {item.text}
+            </Text>
+          </View>
+        )}
+      />
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+      {loading && (
+        <ActivityIndicator
+          size="large"
+          color="#00ff88"
+        />
+      )}
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+      <View style={styles.inputRow}>
+        <TextInput
+          style={styles.input}
+          placeholder="Ask Coach..."
+          placeholderTextColor="#999"
+          value={message}
+          onChangeText={setMessage}
+        />
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={askAI}
+        >
+          <Text style={styles.buttonText}>
+            SEND
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
+    backgroundColor: "#0d0d0d",
+    paddingTop: 60,
+    paddingHorizontal: 15
   },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
+
   title: {
-    textAlign: 'center',
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#00ff88",
+    textAlign: "center",
+    marginBottom: 20
   },
-  code: {
-    textTransform: 'uppercase',
+
+  aiBubble: {
+    backgroundColor: "#1a1a1a",
+    padding: 15,
+    borderRadius: 15,
+    marginBottom: 10,
+    alignSelf: "flex-start",
+    maxWidth: "85%"
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+
+  userBubble: {
+    backgroundColor: "#00ff88",
+    padding: 15,
+    borderRadius: 15,
+    marginBottom: 10,
+    alignSelf: "flex-end",
+    maxWidth: "85%"
   },
+
+  messageText: {
+    color: "#fff",
+    fontSize: 16
+  },
+
+  inputRow: {
+    flexDirection: "row",
+    marginBottom: 20,
+    gap: 10
+  },
+
+  input: {
+    flex: 1,
+    backgroundColor: "#1a1a1a",
+    color: "#fff",
+    padding: 15,
+    borderRadius: 12
+  },
+
+  button: {
+    backgroundColor: "#00ff88",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+    borderRadius: 12
+  },
+
+  buttonText: {
+    fontWeight: "bold",
+    color: "#000"
+  }
 });
