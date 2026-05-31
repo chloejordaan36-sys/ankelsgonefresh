@@ -11,7 +11,7 @@ const app = express();
    CONFIG
 ========================= */
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 
 const OLLAMA_URL =
   process.env.OLLAMA_URL ||
@@ -114,10 +114,5 @@ app.get("/", (req, res) => {
 ========================= */
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`
-🚀 ANKLES GONE AI SERVER LIVE
-PORT: ${PORT}
-MODE: HYBRID COACH + STREETBALL AI
-STATUS: READY
-  `);
+  console.log("SERVER RUNNING ON PORT:", PORT);
 });
