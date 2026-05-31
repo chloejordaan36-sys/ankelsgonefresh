@@ -1,21 +1,3 @@
-const db = require("./db");
-
-db.run(`
-CREATE TABLE IF NOT EXISTS players (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user TEXT,
-  position TEXT,
-  height TEXT,
-  weight TEXT,
-  age INTEGER,
-  dominant_hand TEXT,
-  skill_level TEXT,
-  strengths TEXT,
-  weaknesses TEXT,
-  goal TEXT,
-  created_at TEXT
-)
-`);
 const express = require("express");
 const cors = require("cors");
 const sqlite3 = require("sqlite3").verbose();
@@ -46,14 +28,15 @@ app.use(
    DATABASE SETUP
 ========================= */
 
-const dbFolder = path.join(__dirname, "../database");
+const dbPath = path.join(__dirname, "database.db");
 
-if (!fs.existsSync(dbFolder)) {
-  fs.mkdirSync(dbFolder, { recursive: true });
-}
-
-const dbPath = path.join(dbFolder, "database.db");
-
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error("DB ERROR:", err);
+  } else {
+    console.log("✅ Connected to SQLite database");
+  }
+});
 
 /* =========================
    TABLES
