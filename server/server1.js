@@ -13,7 +13,21 @@ app.use(express.json());
 
 const dbPath = path.join(__dirname, "database.db");
 
-const db = new sqlite3.Database(dbPath);
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error("❌ DB ERROR:", err.message);
+  } else {
+    console.log("✅ Connected to SQLite database");
+  }
+});
+
+/* ROOT */
+
+app.get("/", (req, res) => {
+  res.send("ANKLES GONE AI ONLINE 🚀");
+});
+
+/* HEALTH */
 
 app.get("/health", (req, res) => {
   res.json({
@@ -23,13 +37,8 @@ app.get("/health", (req, res) => {
   });
 });
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log("SERVER RUNNING ON PORT:", PORT);
-});
+/* START SERVER */
 
-app.get("/health", (req, res) => {
-  res.json({
-    status: "online",
-    database: "connected"
-  });
+app.listen(PORT, "0.0.0.0", () => {
+  console.log("🚀 SERVER RUNNING ON PORT:", PORT);
 });
