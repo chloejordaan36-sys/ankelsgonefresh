@@ -15,11 +15,21 @@ const dbPath = path.join(__dirname, "database.db");
 
 const db = new sqlite3.Database(dbPath);
 
-app.get("/", (req, res) => {
-  console.log("ROOT ROUTE HIT");
-  res.status(200).send("ANKLES GONE API LIVE 🚀");
+app.get("/health", (req, res) => {
+  res.json({
+    status: "online",
+    port: PORT,
+    database: "connected"
+  });
 });
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log("SERVER RUNNING ON PORT:", PORT);
+});
+
+app.get("/health", (req, res) => {
+  res.json({
+    status: "online",
+    database: "connected"
+  });
 });
