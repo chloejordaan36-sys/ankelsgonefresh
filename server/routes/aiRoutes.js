@@ -3,11 +3,7 @@ const router = express.Router();
 
 const supabase = require("../config/supabase");
 
-const {
-  getMemory,
-  getLongMemory
-} = require("../services/memoryService");
-
+const { getMemory, getLongMemory } = require("../services/memoryService");
 const { askAI } = require("../services/aiService");
 
 const buildCoachPrompt = require("../utils/coachPrompt");
@@ -19,55 +15,49 @@ const buildTrainingPlan = require("../services/trainingPlannerBrain");
 router.post("/", async (req, res) => {
   try {
     console.log("\n==============================");
-    console.log("NEW REQUEST RECEIVED");
+    console.log("🏀 NEW REQUEST");
     console.log("==============================");
 
     const { user_id, message } = req.body;
 
-    console.log("User ID:", user_id);
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        error: "Message is required"
+      });
+    }
+
+    console.log("User:", user_id);
     console.log("Message:", message);
 
-    // 1. Load player progress
-    console.log("Loading player progress...");
-
+    // =========================
+    // 1. PLAYER PROGRESS
+    // =========================
     const { data: progress, error: progressError } = await supabase
       .from("user_player_progress_tracking")
       .select("*")
       .eq("user_id", user_id)
       .maybeSingle();
 
-    if (progressError) {
-      console.error("Progress Error:", progressError);
-      throw progressError;
+    if (progressError && progressError.code !== "PGRST116") {
+      console.error("Progress Error:", progressError.message);
     }
 
-    console.log("Player progress loaded");
-
-    // 2. Load memory
-    console.log("Loading memory...");
-
+    // =========================
+    // 2. MEMORY
+    // =========================
     const memory = await getMemory(user_id);
     const longMemory = await getLongMemory(user_id);
 
-    console.log("Memory loaded");
-
-    // 3. Generate insights
-    console.log("Generating insights...");
-
+    // =========================
+    // 3. INSIGHTS + SKILLS
+    // =========================
     const insights = generateInsights([message]);
-
-    console.log("Insights generated");
-
-    // 4. Update skills
-    console.log("Updating skills...");
-
     const updatedProgress = updateSkills(progress || {}, message);
 
-    console.log("Skills updated");
-
-    // 5. Build base brain
-    console.log("Building basketball brain...");
-
+    // =========================
+    // 4. BRAIN
+    // =========================
     const brainBase = buildBasketballBrain({
       profile: progress || {},
       progress: updatedProgress,
@@ -75,18 +65,11 @@ router.post("/", async (req, res) => {
       summaries: longMemory || memory
     });
 
-    console.log("Brain built");
-
-    // 6. Generate training plan
-    console.log("Generating training plan...");
-
     const trainingPlan = buildTrainingPlan(brainBase);
 
-    console.log("Training plan generated");
-
-    // 7. Save training plan
-    console.log("Saving training plan...");
-
+    // =========================
+    // 5. SAVE TRAINING PLAN
+    // =========================
     const { error: trainingError } = await supabase
       .from("training_plans")
       .upsert({
@@ -99,14 +82,12 @@ router.post("/", async (req, res) => {
       });
 
     if (trainingError) {
-      console.error("Training Plan Error:", trainingError);
+      console.log("Training save error:", trainingError.message);
     }
 
-    console.log("Training plan saved");
-
-    // 8. Final brain
-    console.log("Building final brain...");
-
+    // =========================
+    // 6. FINAL BRAIN
+    // =========================
     const brain = buildBasketballBrain({
       profile: progress || {},
       progress: updatedProgress,
@@ -115,84 +96,65 @@ router.post("/", async (req, res) => {
       summaries: longMemory || memory
     });
 
-    console.log("Final brain built");
-
-    // 9. Build prompt
-    console.log("Building prompt...");
-
     const prompt = buildCoachPrompt(brain, message);
 
-    console.log("Prompt built");
-    console.log("Prompt length:", prompt.length);
+    console.log("Prompt ready:", prompt.length);
 
-    // 10. Ask AI
-    console.log("Calling Ollama...");
+    // =========================
+    // 7. AI CALL (OLLAMA / NGROK SAFE)
+    // =========================
+    let reply;
 
-    const reply = await askAI(prompt);
+    try {
+      reply = await askAI(prompt);
+    } catch (aiErr) {
+      console.error("❌ AI ERROR:", aiErr.message);
 
-    console.log("Ollama finished");
-    console.log("Reply length:", reply?.length || 0);
-
-    // 11. Update player progress
-    console.log("Saving updated progress...");
-
-    if (progress) {
-      const { error: updateError } = await supabase
-        .from("user_player_progress_tracking")
-        .update(updatedProgress)
-        .eq("user_id", user_id);
-
-      if (updateError) {
-        console.error("Progress Update Error:", updateError);
-      }
+      reply = "⚠️ Coach is offline right now. Try again in a moment.";
     }
 
-    console.log("Progress saved");
+    // =========================
+    // 8. UPDATE PROGRESS
+    // =========================
+    if (user_id && Object.keys(updatedProgress || {}).length > 0) {
+      await supabase
+        .from("user_player_progress_tracking")
+        .upsert({
+          user_id,
+          ...updatedProgress,
+          updated_at: new Date().toISOString()
+        });
+    }
 
-    // 12. Save memory
-    console.log("Saving memory...");
-
+    // =========================
+    // 9. SAVE MEMORY (SAFE TABLE)
+    // =========================
     const { error: memoryError } = await supabase
       .from("memory")
       .insert([
-        {
-          user_id,
-          role: "user",
-          message
-        },
-        {
-          user_id,
-          role: "assistant",
-          message: reply
-        }
+        { user_id, role: "user", message },
+        { user_id, role: "assistant", message: reply }
       ]);
 
     if (memoryError) {
-      console.error("Memory Error:", memoryError);
+      console.log("Memory error (ignored):", memoryError.message);
     }
 
-    console.log("Memory saved");
-
-    // 13. Send response
-    console.log("Sending response");
-
+    // =========================
+    // 10. RESPONSE
+    // =========================
     return res.json({
       success: true,
       reply
     });
 
   } catch (err) {
-    console.error("\n==============================");
-    console.error("ROUTE ERROR");
-    console.error("==============================");
+    console.error("\n❌ ROUTE CRASH:");
     console.error(err);
 
     return res.status(500).json({
       success: false,
-      error: err.message,
-      stack: process.env.NODE_ENV === "development"
-        ? err.stack
-        : undefined
+      error: err.message
     });
   }
 });

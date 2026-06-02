@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+console.log("API URL:", process.env.REACT_APP_API_URL);
 
 export default function ChatBox() {
   const [messages, setMessages] = useState([
@@ -32,19 +33,20 @@ export default function ChatBox() {
     setLoading(true);
 
     try {
+      
       const res = await fetch(
-        "http://localhost:8080/ask-ai",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            user_id: "test123",
-            message: messageText
-          })
-        }
-      );
+  `${process.env.REACT_APP_API_URL}/ask-ai`,
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      user_id: "test123",
+      message: messageText
+    })
+  }
+); 
 
       const data = await res.json();
 
