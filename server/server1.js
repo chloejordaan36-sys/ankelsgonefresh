@@ -1,4 +1,5 @@
 require("dotenv").config();
+console.log("DEPLOY TEST COMMIT 74a1b17");
 
 const express = require("express");
 const cors = require("cors");
