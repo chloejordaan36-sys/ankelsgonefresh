@@ -31,5 +31,11 @@ app.use("/ask-ai", aiRoutes);
 const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
-  console.log(`ANKLES GONE AI ONLINE on port ${PORT}`);
+  console.log("");
+  console.log("==================================");
+  console.log("🏀 ANKLES GONE AI ONLINE");
+  console.log(`🌐 Server Port: ${PORT}`);
+  console.log(`🔗 Local URL: http://localhost:${PORT}`);
+  console.log("==================================");
+  console.log("");
 });

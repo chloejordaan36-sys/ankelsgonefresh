@@ -33,7 +33,7 @@ export default function ChatBox() {
 
     try {
       const res = await fetch(
-        "https://anklesgonefresh-production.up.railway.app/ask-ai",
+        "http://localhost:8080/ask-ai",
         {
           method: "POST",
           headers: {
