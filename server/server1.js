@@ -62,6 +62,7 @@ const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log("\n==================================");
+  console.log("ENV OLLAMA_URL:", process.env.OLLAMA_URL);
   console.log("🏀 ANKLES GONE AI ONLINE");
   console.log(`🌐 Port: ${PORT}`);
   console.log(`🔗 Local: http://localhost:${PORT}`);

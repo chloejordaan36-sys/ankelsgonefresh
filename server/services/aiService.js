@@ -2,42 +2,45 @@ const axios = require("axios");
 
 const OLLAMA_URL = process.env.OLLAMA_URL;
 
+if (!OLLAMA_URL) {
+throw new Error("OLLAMA_URL is missing");
+}
+
 async function askAI(prompt) {
-  try {
-    console.log("==================================");
-    console.log("OLLAMA_URL:", OLLAMA_URL);
-    console.log("Sending to Ollama...");
-    console.log("==================================");
+const start = Date.now();
 
-    const response = await axios.post(
-      `${OLLAMA_URL}/api/generate`,
-      {
-        model: "llama3.2:3b",
-        prompt,
-        stream: false
+try {
+console.log("OLLAMA_URL =", OLLAMA_URL);
+console.log("Sending prompt to Ollama...");
+
+  const response = await axios.post(
+    `${OLLAMA_URL}/api/generate`,
+    {
+      model: process.env.MODEL_NAME || "llama3.2:3b",
+      prompt,
+      stream: false,
+    },
+    {
+      timeout: 300000,
+      headers: {
+        "ngrok-skip-browser-warning": "true",
       },
-      {
-        timeout: 300000,
-        headers: {
-          "ngrok-skip-browser-warning": "true"
-        }
-      }
-    );
-
-    console.log("Ollama responded");
-
-    return response.data.response;
-
-  } catch (err) {
-    console.error("❌ Ollama error:", err.message);
-
-    if (err.response) {
-      console.error("Status:", err.response.status);
-      console.error("Data:", err.response.data);
     }
+  );
 
-    return "AI temporarily overloaded. Try again.";
-  }
+  const seconds = ((Date.now() - start) / 1000).toFixed(1);
+
+  console.log(`✅ Ollama finished in ${seconds}s`);
+
+  return response.data.response;
+} catch (err) {
+  const seconds = ((Date.now() - start) / 1000).toFixed(1);
+
+  console.error(`❌ Ollama failed after ${seconds}s`);
+  console.error(err.message);
+
+  throw err;
+}
 }
 
 module.exports = { askAI };
