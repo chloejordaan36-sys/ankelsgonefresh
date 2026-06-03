@@ -24,9 +24,9 @@ app.post("/ask-ai", async (req, res) => {
     const response = await axios.post(
       "http://127.0.0.1:11434/api/generate",
       {
-        model: "phi3",
+        model: "gemma:2b",
         prompt,
-        stream: false,
+        stream: true,
         keep_alive: "30m",
         options: {
           temperature: 0.7,
