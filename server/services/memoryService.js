@@ -6,7 +6,7 @@ async function getMemory(user_id) {
     .select("*")
     .eq("user_id", user_id)
     .order("created_at", { ascending: false })
-    .limit(20);
+    .limit(3);
 
   return data || [];
 }

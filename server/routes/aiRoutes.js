@@ -46,9 +46,8 @@ router.post("/", async (req, res) => {
     // =========================
     // 2. MEMORY
     // =========================
-    const memory = await getMemory(user_id);
-    const longMemory = await getLongMemory(user_id);
-
+    const memory = (await getMemory(user_id)).slice(0, 5);
+const longMemory = (await getLongMemory(user_id)).slice(0, 3);
     // =========================
     // 3. INSIGHTS + SKILLS
     // =========================
@@ -96,9 +95,40 @@ router.post("/", async (req, res) => {
       summaries: longMemory || memory
     });
 
-    const prompt = buildCoachPrompt(brain, message);
+    console.log("Memory records:", memory.length);
+
+console.log(
+  "Memory chars:",
+  JSON.stringify(memory).length
+);
+
+console.log(
+  "Long memory chars:",
+  JSON.stringify(longMemory).length
+);
+
+console.log(
+  "Brain chars:",
+  JSON.stringify(brain).length
+);
+
+if (memory.length > 5) {
+  memory.splice(5);
+}
+
+console.log("INSIGHTS:", JSON.stringify(insights).length);
+console.log("MEMORY:", memory.length);
+console.log("LONG MEMORY:", longMemory.length);
+const prompt = buildCoachPrompt(brain, message);
 
     console.log("Prompt ready:", prompt.length);
+console.log("Prompt chars:", prompt.length);
+
+if (prompt.length > 15000) {
+  throw new Error(
+    `Prompt too large: ${prompt.length}`
+  );
+}
 
     // =========================
     // 7. AI CALL (OLLAMA / NGROK SAFE)

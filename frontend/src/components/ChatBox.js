@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-console.log("API URL:", process.env.REACT_APP_API_URL);
 
 export default function ChatBox() {
   const [messages, setMessages] = useState([
@@ -23,7 +22,6 @@ export default function ChatBox() {
 
     const messageText = input;
 
-    // Add user message instantly
     setMessages((prev) => [
       ...prev,
       { role: "user", text: messageText }
@@ -33,20 +31,19 @@ export default function ChatBox() {
     setLoading(true);
 
     try {
-      
       const res = await fetch(
-  `${process.env.REACT_APP_API_URL}/ask-ai`,
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      user_id: "test123",
-      message: messageText
-    })
-  }
-); 
+        `${process.env.REACT_APP_API_URL}/ask-ai`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            user_id: "test123",
+            message: messageText
+          })
+        }
+      );
 
       const data = await res.json();
 
@@ -54,7 +51,7 @@ export default function ChatBox() {
         ...prev,
         {
           role: "ai",
-          text: data.reply || "No response from coach"
+          text: data.reply
         }
       ]);
     } catch (err) {
@@ -80,10 +77,8 @@ export default function ChatBox() {
             key={i}
             style={{
               ...styles.message,
-              alignSelf:
-                msg.role === "user" ? "flex-end" : "flex-start",
-              backgroundColor:
-                msg.role === "user" ? "#2563eb" : "#1f2937"
+              alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
+              backgroundColor: msg.role === "user" ? "#2563eb" : "#1f2937"
             }}
           >
             {msg.text}
@@ -91,13 +86,7 @@ export default function ChatBox() {
         ))}
 
         {loading && (
-          <div
-            style={{
-              ...styles.message,
-              alignSelf: "flex-start",
-              backgroundColor: "#111827"
-            }}
-          >
+          <div style={{ ...styles.message, backgroundColor: "#111827" }}>
             🧠 Coach is thinking...
           </div>
         )}
@@ -109,9 +98,9 @@ export default function ChatBox() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           placeholder="Ask your coach..."
           style={styles.input}
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
         />
 
         <button onClick={sendMessage} style={styles.button}>
@@ -168,7 +157,6 @@ const styles = {
     backgroundColor: "#2563eb",
     color: "white",
     border: "none",
-    borderRadius: 6,
-    cursor: "pointer"
+    borderRadius: 6
   }
 };
