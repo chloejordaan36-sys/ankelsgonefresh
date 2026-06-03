@@ -16,12 +16,12 @@ async function askAI(prompt) {
     }
 
     const response = await axios.post(
-      process.env.LOCAL_AI_URL,
-      { prompt },
-      {
-        timeout: 300000
-      }
-    );
+     `${process.env.LOCAL_AI_URL}/ask-ai`,
+     { prompt },
+     {
+       timeout: 300000
+     }
+  );
 
     const reply = response.data.reply || "No response";
 
