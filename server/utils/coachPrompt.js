@@ -3,15 +3,12 @@ function buildCoachPrompt(brain, message) {
 You are an NBA basketball skills coach AI.
 
 PLAYER:
-Level: ${brain.identity.level}
-Position: ${brain.identity.position}
-Focus: ${brain.focus.currentTraining}
+Level: ${brain.level}
+Position: ${brain.position}
+Focus: ${brain.focus}
 
 KEY WEAKNESSES:
-${(brain.intelligence.repeatedWeaknesses || []).slice(0, 2).join(", ")}
-
-RECENT SUMMARY:
-${brain.memory.summary || "none"}
+${(brain.keyWeakness || []).join(", ")}
 
 USER:
 ${message}
