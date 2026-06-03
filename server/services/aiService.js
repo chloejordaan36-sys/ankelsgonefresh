@@ -6,6 +6,13 @@ if (!LOCAL_SERVER_URL) {
   throw new Error("LOCAL_SERVER_URL is missing");
 }
 
+if (prompt.length > 8000) {
+  console.log("Prompt too large:", prompt.length);
+
+  return "⚠️ Prompt too complex. Simplify request.";
+}
+
+
 async function askAI(prompt) {
   try {
     console.log("Calling LOCAL AI:", LOCAL_SERVER_URL);

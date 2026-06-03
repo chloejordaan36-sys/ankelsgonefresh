@@ -47,7 +47,7 @@ router.post("/", async (req, res) => {
     // 2. MEMORY
     // =========================
     const memory = (await getMemory(user_id)).slice(0, 5);
-const longMemory = (await getLongMemory(user_id)).slice(0, 3);
+    const longMemory = (await getLongMemory(user_id)).slice(0, 3);
     // =========================
     // 3. INSIGHTS + SKILLS
     // =========================
@@ -57,11 +57,22 @@ const longMemory = (await getLongMemory(user_id)).slice(0, 3);
     // =========================
     // 4. BRAIN
     // =========================
+    
+    function cleanPromptText(text) {
+  return text
+    .replace(/COACH INSTRUCTIONS:/g, "")
+    .replace(/OUTPUT STYLE:/g, "")
+    .replace(/- Act like.*?system\./g, "")
+    .slice(0, 2000);
+}
+
     const brainBase = buildBasketballBrain({
       profile: progress || {},
       progress: updatedProgress,
       insights,
-      summaries: longMemory || memory
+      summaries: (longMemory || memory)
+        .slice(0, 5)
+        .map(m => m.message?.slice(0, 200))
     });
 
     const trainingPlan = buildTrainingPlan(brainBase);
