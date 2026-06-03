@@ -1,21 +1,50 @@
 const axios = require("axios");
 
+// 🔥 GLOBAL CACHE (stays alive between requests)
+const cache = new Map();
+
 async function askAI(prompt) {
   try {
-    const LOCAL_AI_URL =
-      process.env.LOCAL_AI_URL;
+    if (!prompt || typeof prompt !== "string") {
+      throw new Error("Prompt missing or invalid");
+    }
+
+    // =========================
+    // ⚡ CACHE CHECK (FAST LANE)
+    // =========================
+    if (cache.has(prompt)) {
+      console.log("⚡ CACHE HIT");
+      return cache.get(prompt);
+    }
 
     const response = await axios.post(
-      `${LOCAL_AI_URL}/ask-ai`,
-      { prompt },
+      process.env.OLLAMA_URL || "http://localhost:11434/api/generate",
+      {
+        model: "llama3.2:3b",
+        prompt,
+        stream: false,
+        options: {
+          temperature: 0.7,
+          num_ctx: 2048,
+          num_predict: 150
+        }
+      },
       {
         timeout: 120000
       }
     );
 
-    return response.data.reply;
+    const reply = response.data.response || "No response";
+
+    // =========================
+    // 💾 SAVE TO CACHE
+    // =========================
+    cache.set(prompt, reply);
+
+    return reply;
+
   } catch (err) {
-    console.error("LOCAL AI ERROR:", err.message);
+    console.error("OLLAMA ERROR:", err.message);
     throw err;
   }
 }

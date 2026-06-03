@@ -18,12 +18,12 @@ app.use(express.json({ limit: "1mb" }));
 const allowedOrigins = [
   "http://localhost:3000",
   "http://192.168.0.27:3000",
-  "https://jury-acquisition-twin-tank.trycloudflare.com"
+  "https://time-scored-costume-assumes.trycloudflare.com"
 ];
 
 // fallback safety (prevents undefined breaking CORS)
-if (!allowedOrigins.includes("https://jury-acquisition-twin-tank.trycloudflare.com")) {
-  allowedOrigins.push("https://jury-acquisition-twin-tank.trycloudflare.com");
+if (!allowedOrigins.includes("https://time-scored-costume-assumes.trycloudflare.com  ")) {
+  allowedOrigins.push("https://time-scored-costume-assumes.trycloudflare.com");
 }
 
 app.use(cors({

@@ -18,12 +18,17 @@ app.post("/ask-ai", async (req, res) => {
     const { prompt } = req.body;
 
     const response = await axios.post(
-      "http://localhost:11434/api/generate",
-      {
-        model: "llama3",
-        prompt,
-        stream: false
-      }
+      "http://127.0.0.1:11434/api/generate",
+    {
+  model: "llama3.2:3b",
+  prompt,
+  stream: false,
+  options: {
+    temperature: 0.7,
+    num_ctx: 2048,   // 🔥 LIMIT CONTEXT SIZE
+    num_predict: 150 // 🔥 LIMIT RESPONSE LENGTH
+  }
+}  
     );
 
     res.json({

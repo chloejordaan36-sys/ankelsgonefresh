@@ -86,7 +86,16 @@ router.post("/", async (req, res) => {
     // =========================
     // 7. BUILD PROMPT (SAFETY LIMIT)
     // =========================
-    const prompt = buildCoachPrompt(brain, message);
+    const compressedBrain = {
+       level: brain.identity.level,
+       position: brain.identity.position,
+       focus: brain.focus.currentTraining,
+       keyWeakness: brain.intelligence.repeatedWeaknesses?.slice(0, 2)
+    };
+     const prompt = buildCoachPrompt(
+        { ...brain, ...compressedBrain },
+        message
+      );
 
     if (prompt.length > 12000) {
       console.log("⚠️ Prompt too large:", prompt.length);
