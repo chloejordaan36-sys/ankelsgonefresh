@@ -1,9 +1,9 @@
 {
   "name": "anklesgone-api",
   "version": "1.0.0",
-  "main": "server1.js",
+  "main": "server/server1.js",
   "scripts": {
-    "start": "node server1.js"
+    "start": "node server/server1.js"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
