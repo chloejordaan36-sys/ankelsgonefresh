@@ -1,6 +1,6 @@
 const axios = require("axios");
 
-// 🔥 GLOBAL CACHE (stays alive between requests)
+// 🔥 GLOBAL CACHE
 const cache = new Map();
 
 async function askAI(prompt) {
@@ -9,42 +9,32 @@ async function askAI(prompt) {
       throw new Error("Prompt missing or invalid");
     }
 
-    // =========================
-    // ⚡ CACHE CHECK (FAST LANE)
-    // =========================
+    // ⚡ Cache
     if (cache.has(prompt)) {
       console.log("⚡ CACHE HIT");
       return cache.get(prompt);
     }
 
     const response = await axios.post(
-      process.env.OLLAMA_URL || "http://localhost:11434/api/generate",
+      process.env.LOCAL_AI_URL,
+      { prompt },
       {
-        model: "llama3.2:3b",
-        prompt,
-        stream: false,
-        options: {
-          temperature: 0.7,
-          num_ctx: 2048,
-          num_predict: 150
-        }
-      },
-      {
-        timeout: 120000
+        timeout: 300000
       }
     );
 
-    const reply = response.data.response || "No response";
+    const reply = response.data.reply || "No response";
 
-    // =========================
-    // 💾 SAVE TO CACHE
-    // =========================
     cache.set(prompt, reply);
 
     return reply;
 
   } catch (err) {
-    console.error("OLLAMA ERROR:", err.message);
+    console.error("LOCAL AI ERROR:");
+    console.error("message:", err.message);
+    console.error("code:", err.code);
+    console.error("response:", err.response?.data);
+
     throw err;
   }
 }
