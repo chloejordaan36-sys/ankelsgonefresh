@@ -15,30 +15,24 @@ app.get("/", (req, res) => {
 // MAIN AI ROUTE
 app.post("/ask-ai", async (req, res) => {
   try {
-    const { message } = req.body;
+    const { prompt } = req.body;
 
-    if (!message) {
-      return res.status(400).json({ error: "No message provided" });
-    }
+    const response = await axios.post(
+      "http://localhost:11434/api/generate",
+      {
+        model: "llama3",
+        prompt,
+        stream: false
+      }
+    );
 
-    console.log("Incoming:", message);
-
-    const response = await axios.post("http://localhost:11434/api/generate", {
-      model: "llama3.2:3b",
-      prompt: message,
-      stream: false
-    });
-
-    return res.json({
-      success: true,
+    res.json({
       reply: response.data.response
     });
 
   } catch (err) {
-    console.error("LOCAL AI ERROR:", err.message);
-    return res.status(500).json({
-      success: false,
-      reply: "AI failed locally"
+    res.status(500).json({
+      error: err.message
     });
   }
 });

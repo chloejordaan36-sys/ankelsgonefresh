@@ -14,11 +14,7 @@ const buildTrainingPlan = require("../services/trainingPlannerBrain");
 
 router.post("/", async (req, res) => {
   try {
-    console.log("\n==============================");
-    console.log("🏀 NEW REQUEST");
-    console.log("==============================");
-
-    const { user_id, message } = req.body;
+    const { user_id = "guest", message } = req.body;
 
     if (!message) {
       return res.status(400).json({
@@ -27,27 +23,23 @@ router.post("/", async (req, res) => {
       });
     }
 
-    console.log("User:", user_id);
-    console.log("Message:", message);
+    console.log("\n🏀 NEW REQUEST:", message);
 
     // =========================
     // 1. PLAYER PROGRESS
     // =========================
-    const { data: progress, error: progressError } = await supabase
+    const { data: progress } = await supabase
       .from("user_player_progress_tracking")
       .select("*")
       .eq("user_id", user_id)
       .maybeSingle();
 
-    if (progressError && progressError.code !== "PGRST116") {
-      console.error("Progress Error:", progressError.message);
-    }
-
     // =========================
-    // 2. MEMORY
+    // 2. MEMORY (LIMITED → FIX PROMPT OVERLOAD)
     // =========================
     const memory = (await getMemory(user_id)).slice(0, 5);
-    const longMemory = (await getLongMemory(user_id)).slice(0, 3);
+    const longMemory = (await getLongMemory(user_id)).slice(0, 2);
+
     // =========================
     // 3. INSIGHTS + SKILLS
     // =========================
@@ -55,24 +47,15 @@ router.post("/", async (req, res) => {
     const updatedProgress = updateSkills(progress || {}, message);
 
     // =========================
-    // 4. BRAIN
+    // 4. BRAIN BUILD
     // =========================
-    
-    function cleanPromptText(text) {
-  return text
-    .replace(/COACH INSTRUCTIONS:/g, "")
-    .replace(/OUTPUT STYLE:/g, "")
-    .replace(/- Act like.*?system\./g, "")
-    .slice(0, 2000);
-}
-
     const brainBase = buildBasketballBrain({
       profile: progress || {},
       progress: updatedProgress,
       insights,
-      summaries: (longMemory || memory)
+      summaries: [...longMemory, ...memory]
         .slice(0, 5)
-        .map(m => m.message?.slice(0, 200))
+        .map(m => (m.message || "").slice(0, 120))
     });
 
     const trainingPlan = buildTrainingPlan(brainBase);
@@ -80,20 +63,14 @@ router.post("/", async (req, res) => {
     // =========================
     // 5. SAVE TRAINING PLAN
     // =========================
-    const { error: trainingError } = await supabase
-      .from("training_plans")
-      .upsert({
-        user_id,
-        focus: trainingPlan.focus,
-        intensity: trainingPlan.intensity,
-        drills: trainingPlan.drills,
-        next_workout: trainingPlan.nextWorkout,
-        updated_at: new Date().toISOString()
-      });
-
-    if (trainingError) {
-      console.log("Training save error:", trainingError.message);
-    }
+    await supabase.from("training_plans").upsert({
+      user_id,
+      focus: trainingPlan.focus,
+      intensity: trainingPlan.intensity,
+      drills: trainingPlan.drills,
+      next_workout: trainingPlan.nextWorkout,
+      updated_at: new Date().toISOString()
+    });
 
     // =========================
     // 6. FINAL BRAIN
@@ -103,86 +80,54 @@ router.post("/", async (req, res) => {
       progress: updatedProgress,
       insights,
       trainingPlan,
-      summaries: longMemory || memory
+      summaries: memory
     });
 
-    console.log("Memory records:", memory.length);
+    // =========================
+    // 7. BUILD PROMPT (SAFETY LIMIT)
+    // =========================
+    const prompt = buildCoachPrompt(brain, message);
 
-console.log(
-  "Memory chars:",
-  JSON.stringify(memory).length
-);
+    if (prompt.length > 12000) {
+      console.log("⚠️ Prompt too large:", prompt.length);
 
-console.log(
-  "Long memory chars:",
-  JSON.stringify(longMemory).length
-);
-
-console.log(
-  "Brain chars:",
-  JSON.stringify(brain).length
-);
-
-if (memory.length > 5) {
-  memory.splice(5);
-}
-
-console.log("INSIGHTS:", JSON.stringify(insights).length);
-console.log("MEMORY:", memory.length);
-console.log("LONG MEMORY:", longMemory.length);
-const prompt = buildCoachPrompt(brain, message);
-
-    console.log("Prompt ready:", prompt.length);
-console.log("Prompt chars:", prompt.length);
-
-if (prompt.length > 15000) {
-  throw new Error(
-    `Prompt too large: ${prompt.length}`
-  );
-}
+      return res.json({
+        success: true,
+        reply:
+          "⚠️ System overloaded. Reduce memory size or shorten prompt builder."
+      });
+    }
 
     // =========================
-    // 7. AI CALL (OLLAMA / NGROK SAFE)
+    // 8. AI CALL
     // =========================
     let reply;
-
     try {
       reply = await askAI(prompt);
-    } catch (aiErr) {
-      console.error("❌ AI ERROR:", aiErr.message);
-
-      reply = "⚠️ Coach is offline right now. Try again in a moment.";
+    } catch (err) {
+      console.error("AI ERROR:", err.message);
+      reply = "⚠️ Coach offline. Try again.";
     }
 
     // =========================
-    // 8. UPDATE PROGRESS
+    // 9. UPDATE PROGRESS
     // =========================
-    if (user_id && Object.keys(updatedProgress || {}).length > 0) {
-      await supabase
-        .from("user_player_progress_tracking")
-        .upsert({
-          user_id,
-          ...updatedProgress,
-          updated_at: new Date().toISOString()
-        });
-    }
+    await supabase.from("user_player_progress_tracking").upsert({
+      user_id,
+      ...updatedProgress,
+      updated_at: new Date().toISOString()
+    });
 
     // =========================
-    // 9. SAVE MEMORY (SAFE TABLE)
+    // 10. MEMORY SAVE
     // =========================
-    const { error: memoryError } = await supabase
-      .from("memory")
-      .insert([
-        { user_id, role: "user", message },
-        { user_id, role: "assistant", message: reply }
-      ]);
-
-    if (memoryError) {
-      console.log("Memory error (ignored):", memoryError.message);
-    }
+    await supabase.from("memory").insert([
+      { user_id, role: "user", message },
+      { user_id, role: "assistant", message: reply }
+    ]);
 
     // =========================
-    // 10. RESPONSE
+    // 11. RESPONSE
     // =========================
     return res.json({
       success: true,
@@ -190,12 +135,12 @@ if (prompt.length > 15000) {
     });
 
   } catch (err) {
-    console.error("\n❌ ROUTE CRASH:");
-    console.error(err);
+    console.error("❌ ROUTE CRASH:", err);
 
     return res.status(500).json({
       success: false,
-      error: err.message
+      error: "Server crash",
+      details: err.message
     });
   }
 });
