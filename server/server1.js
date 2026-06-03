@@ -18,37 +18,21 @@ app.use(express.json({ limit: "1mb" }));
 const allowedOrigins = [
   "http://localhost:3000",
   "http://192.168.0.27:3000",
-  process.env.FRONTEND_URL
+  "https://jury-acquisition-twin-tank.trycloudflare.com"
 ];
 
 // fallback safety (prevents undefined breaking CORS)
-if (!allowedOrigins.includes(process.env.FRONTEND_URL)) {
-  allowedOrigins.push(process.env.FRONTEND_URL);
+if (!allowedOrigins.includes("https://jury-acquisition-twin-tank.trycloudflare.com")) {
+  allowedOrigins.push("https://jury-acquisition-twin-tank.trycloudflare.com");
 }
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // allow server-to-server / Postman
-      if (!origin) return callback(null, true);
+app.use(cors({
+  origin: true,
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
-      // allow trusted origins
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      console.log("❌ Blocked by CORS:", origin);
-
-      // TEMP: allow everything in production debugging
-      return callback(null, true);
-    },
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-
-// IMPORTANT: handle preflight requests
-app.options("*", cors());
+app.options(/.*/, cors());
 
 // =====================
 // ROUTES
